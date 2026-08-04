@@ -12,6 +12,14 @@ const analyticsRoutes = require('./routes/analyticsRoutes')
 const careerRoutes = require('./routes/careerRoutes')
 const personRoutes = require('./routes/personRoutes')
 
+console.log(
+  "personRoutes:",
+  personRoutes.stack?.map(layer => ({
+    path: layer.route?.path,
+    methods: layer.route?.methods
+  }))
+);
+
 const neo4jDriver = require('./config/neo4j')
 
 const app = express()
@@ -59,6 +67,30 @@ app.use('/api', careerRoutes)
 // =========================
 // 404 Handler
 // =========================
+
+app.get("/debug/routes", (req, res) => {
+  const routes = [];
+
+  app._router.stack.forEach(layer => {
+    if (layer.route) {
+      routes.push({
+        path: layer.route.path,
+        methods: Object.keys(layer.route.methods)
+      });
+    } else if (layer.name === "router") {
+      layer.handle.stack.forEach(r => {
+        if (r.route) {
+          routes.push({
+            path: "/api" + r.route.path,
+            methods: Object.keys(r.route.methods)
+          });
+        }
+      });
+    }
+  });
+
+  res.json(routes);
+});
 
 app.use((req, res) => {
   res.status(404).json({
