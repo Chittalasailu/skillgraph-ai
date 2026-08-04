@@ -8,4 +8,7 @@ const graphViewController = require('../controllers/graphViewController')
 // GET /api/graph
 router.get('/graph', graphViewController.getGraphData)
 
+// GET /api/graph/:person  - returns subgraph centered on a person
+router.get('/graph/:person', graphViewController.getGraphData)
+
 module.exports = router

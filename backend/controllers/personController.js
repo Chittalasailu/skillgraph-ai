@@ -1,31 +1,15 @@
-const driver = require("../config/neo4j");
+const { runReadQuery } = require('../services/neo4jService');
 
 exports.getPersons = async (req, res) => {
-  const session = driver.session();
-
   try {
-    const result = await session.run(
-      "MATCH (p:Person) RETURN p.name AS name"
-    );
+    const cypher = 'MATCH (p:Person) RETURN p.name AS name ORDER BY p.name';
+    const result = await runReadQuery(cypher);
 
-    console.log("Records:", result.records.length);
+    const data = result.records.map(r => ({ name: r.get('name') }));
 
-    res.json({
-      records: result.records.length,
-      data: result.records.map(r => ({
-        name: r.get("name")
-      }))
-    });
-
+    return res.json({ records: data.length, data });
   } catch (err) {
-    console.error(err);
-
-    res.status(500).json({
-      error: err.message,
-      stack: err.stack
-    });
-
-  } finally {
-    await session.close();
+    console.error('Error fetching persons', err);
+    return res.status(500).json({ error: 'Failed to fetch persons' });
   }
 };

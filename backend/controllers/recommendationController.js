@@ -5,8 +5,9 @@ const { runReadQuery } = require('../services/neo4jService')
 
 // GET /api/recommendations/:personName
 exports.getRecommendationsForPerson = async (req, res) => {
-  const name = req.params.personName
-  if (!name) return res.status(400).json({ error: 'personName is required' })
+  // Accept either :personName or :person route param for compatibility
+  const name = req.params.personName || req.params.person
+  if (!name) return res.status(400).json({ error: 'person name is required' })
 
   try {
     // 1) Fetch person's skills

@@ -1,11 +1,14 @@
 // Neo4j / CognoDB driver configuration
 // Reads connection info from environment variables and exports an initialized driver
+// Loads .env in development so local .env values are available
 
-const neo4j = require("neo4j-driver");
+require('dotenv').config();
 
-const uri = process.env.NEO4J_URI || "";
-const username = process.env.NEO4J_USERNAME || "";
-const password = process.env.NEO4J_PASSWORD || "";
+const neo4j = require('neo4j-driver');
+
+const uri = process.env.NEO4J_URI || '';
+const username = process.env.NEO4J_USERNAME || '';
+const password = process.env.NEO4J_PASSWORD || '';
 
 // Accept both CognoDB .com and .cloud domains
 function isCognoDbUri(u) {
@@ -34,14 +37,7 @@ if (uri && username && password) {
     }
   );
 } else {
-  driver = {
-    verifyConnectivity: async () => {
-      throw new Error(
-        "Neo4j/CognoDB environment variables are missing."
-      );
-    },
-    close: async () => {},
-  };
+  throw new Error('Missing Neo4j/CognoDB environment variables. Please set NEO4J_URI, NEO4J_USERNAME, and NEO4J_PASSWORD.');
 }
 
 module.exports = driver;

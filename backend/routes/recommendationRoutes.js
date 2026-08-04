@@ -6,4 +6,7 @@ const recommendationController = require('../controllers/recommendationControlle
 // GET /api/recommendations/:personName
 router.get('/recommendations/:personName', recommendationController.getRecommendationsForPerson)
 
+// Alias: GET /api/recommendations/:person
+router.get('/recommendations/:person', recommendationController.getRecommendationsForPerson)
+
 module.exports = router
