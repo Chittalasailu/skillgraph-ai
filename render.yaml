@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: skillgraph-ai-backend
+    env: node
+    region: oregon
+    branch: main
+    root: backend
+    autoDeploy: true
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      # For security and correct CORS handling, configure CORS_ORIGIN as a Render secret
+      - key: CORS_ORIGIN
+        fromSecret: CORS_ORIGIN
+      - key: NEO4J_URI
+        fromSecret: NEO4J_URI
+      - key: NEO4J_USERNAME
+        fromSecret: NEO4J_USERNAME
+      - key: NEO4J_PASSWORD
+        fromSecret: NEO4J_PASSWORD
+  - type: static
+    name: skillgraph-ai-frontend
+    env: static
+    region: oregon
+    branch: main
+    root: frontend
+    autoDeploy: true
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromSecret: VITE_API_URL
