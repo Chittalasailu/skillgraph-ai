@@ -194,22 +194,28 @@ Why graph traversal is powerful
 > Replace these placeholders with production screenshots before publishing the repository.
 
 - Dashboard
-  - ![Dashboard](docs/screenshots/dashboard.png)
+<img width="1919" height="880" alt="image" src="https://github.com/user-attachments/assets/9ba38c31-0e1a-4845-a955-d2a071d7da2c" />
+
 
 - Graph
-  - ![Graph](docs/screenshots/graph.png)
+<img width="1904" height="855" alt="image" src="https://github.com/user-attachments/assets/f2e34f45-5018-43f6-8a70-3379df359ac9" />
+
+<img width="1877" height="871" alt="image" src="https://github.com/user-attachments/assets/c6c462ed-4344-4b77-b150-a86f5bcc3e6e" />
+<img width="1872" height="809" alt="image" src="https://github.com/user-attachments/assets/c2fc89e8-5d00-453e-bd2a-06b43d20b4c5" />
 
 - Analytics
-  - ![Analytics](docs/screenshots/analytics.png)
+ <img width="1714" height="258" alt="image" src="https://github.com/user-attachments/assets/8e7d0b4c-edf6-4ee5-9f60-2d6277800456" />
 
 - Recommendations
-  - ![Recommendations](docs/screenshots/recommendations.png)
+ <img width="1911" height="842" alt="image" src="https://github.com/user-attachments/assets/38c3a2fe-7e8d-49ff-a4c6-08fc83f790b0" />
+
 
 - Career Assistant
-  - ![Career Assistant](docs/screenshots/career-assistant.png)
+ <img width="1919" height="863" alt="image" src="https://github.com/user-attachments/assets/0608ae79-1f1a-4b6f-ae2e-ed3aa6d3c5c6" />
 
 - Profile
-  - ![Profile](docs/screenshots/profile.png)
+<img width="1918" height="885" alt="image" src="https://github.com/user-attachments/assets/42ec8e45-d468-416f-973c-a1730e77e52b" />
+
 
 ---
 
