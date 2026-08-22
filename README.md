@@ -438,16 +438,6 @@ I cannot perform the external deployment from this environment. To complete the 
 
 ---
 
-## Manual checklist to finish deployment (copy/paste)
-
-- [ ] Push repo to GitHub
-- [ ] Create Render service (import `render.yaml` or create service manually)
-- [ ] Add Render secrets: `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `CORS_ORIGIN`, `VITE_API_URL` (optional)
-- [ ] Confirm backend build succeeds (`npm install` then `npm start`) and `/health` returns OK
-- [ ] Create Vercel project (import repo)
-- [ ] Add Vercel env var `VITE_API_URL` => `https://<your-render-backend>`
-- [ ] Deploy frontend and verify site loads
-- [ ] Verify endpoints listed above respond with expected data
 
 ---
 
