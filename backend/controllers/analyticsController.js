@@ -3,30 +3,47 @@
 
 const { runReadQuery } = require('../services/neo4jService')
 
+// Neo4j returns integers as driver Integer objects; unwrap them to plain numbers.
+const toCount = value => (value && typeof value.toNumber === 'function' ? value.toNumber() : value)
+
+// Counting each label in its own query keeps a missing or empty label at 0.
+// Chaining the counts into a single MATCH pipeline drops every row as soon as
+// one label has no nodes, which returned no records at all and crashed here.
+async function countQuery(cypher) {
+  const result = await runReadQuery(cypher)
+  const record = result.records[0]
+
+  return record ? toCount(record.get('total')) : 0
+}
+
 exports.getOverview = async (req, res) => {
   try {
-    const cypher = `
-      MATCH (n)
-      WITH count(n) AS totalNodes
-      MATCH (p:Person) WITH totalNodes, count(p) AS persons
-      MATCH (s:Skill) WITH totalNodes, persons, count(s) AS skills
-      MATCH (r:Role) WITH totalNodes, persons, skills, count(r) AS roles
-      MATCH (c:Company) WITH totalNodes, persons, skills, roles, count(c) AS companies
-      MATCH (t:Technology) WITH totalNodes, persons, skills, roles, companies, count(t) AS technologies
-      MATCH (v:Vulnerability) WITH totalNodes, persons, skills, roles, companies, technologies, count(v) AS vulnerabilities
-      MATCH ()-[rel]->() WITH totalNodes, persons, skills, roles, companies, technologies, vulnerabilities, count(rel) AS relationships
-      RETURN persons, skills, roles, companies, technologies, vulnerabilities, relationships
-    `
-    const result = await runReadQuery(cypher)
-    const rec = result.records[0]
+    const [
+      persons,
+      skills,
+      roles,
+      companies,
+      technologies,
+      vulnerabilities,
+      relationships,
+    ] = await Promise.all([
+      countQuery('MATCH (p:Person) RETURN count(p) AS total'),
+      countQuery('MATCH (s:Skill) RETURN count(s) AS total'),
+      countQuery('MATCH (r:Role) RETURN count(r) AS total'),
+      countQuery('MATCH (c:Company) RETURN count(c) AS total'),
+      countQuery('MATCH (t:Technology) RETURN count(t) AS total'),
+      countQuery('MATCH (v:Vulnerability) RETURN count(v) AS total'),
+      countQuery('MATCH ()-[rel]->() RETURN count(rel) AS total'),
+    ])
+
     return res.json({
-      persons: rec.get('persons').toNumber ? rec.get('persons').toNumber() : rec.get('persons'),
-      skills: rec.get('skills').toNumber ? rec.get('skills').toNumber() : rec.get('skills'),
-      roles: rec.get('roles').toNumber ? rec.get('roles').toNumber() : rec.get('roles'),
-      companies: rec.get('companies').toNumber ? rec.get('companies').toNumber() : rec.get('companies'),
-      technologies: rec.get('technologies').toNumber ? rec.get('technologies').toNumber() : rec.get('technologies'),
-      vulnerabilities: rec.get('vulnerabilities').toNumber ? rec.get('vulnerabilities').toNumber() : rec.get('vulnerabilities'),
-      relationships: rec.get('relationships').toNumber ? rec.get('relationships').toNumber() : rec.get('relationships'),
+      persons,
+      skills,
+      roles,
+      companies,
+      technologies,
+      vulnerabilities,
+      relationships,
     })
   } catch (err) {
     console.error('Error fetching analytics overview', err)
