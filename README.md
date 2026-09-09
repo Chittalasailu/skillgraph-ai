@@ -4,6 +4,11 @@
 
 Professional knowledge-graph explorer for career data, skills, roles and company-technology relationships.
 
+**Live app:** [skillgraph-ai-sailu1.vercel.app](https://skillgraph-ai-sailu1.vercel.app)
+**Live API:** [skillgraph-ai-levw.onrender.com](https://skillgraph-ai-levw.onrender.com) — check with [`/health`](https://skillgraph-ai-levw.onrender.com/health)
+
+The Vercel deployment currently has Deployment Protection enabled, so visitors are redirected to a Vercel login. Turn it off under the Vercel project's **Settings → Deployment Protection** to make the app public. The Render backend runs on the free tier and spins down when idle, so the first request after a quiet period can take ~50s.
+
 ---
 
 ## Project Overview
@@ -53,7 +58,7 @@ The application implements the following features (as found in the codebase):
 
 - Dashboard — overview page with the interactive graph and quick metrics
 - Interactive Graph — React Flow rendering of nodes and edges with node details
-- Person Selector — choose Sailu, Naveen, Srujitha (or other Persons) to focus the graph
+- Person Selector — choose a Person to focus the graph (the seed data ships with one, `Sailu`)
 - Skills Explorer — list and analytics for Skill nodes
 - Companies — Companies listing and basic insights
 - Roles — Roles listing and required-skill mapping
@@ -175,13 +180,10 @@ RETURN r.name AS roleName, collect(distinct sk.name) AS requiredSkills
 4) Analytics overview (aggregates)
 
 ```cypher
-MATCH (n)
-WITH count(n) AS totalNodes
-MATCH (p:Person) WITH totalNodes, count(p) AS persons
-MATCH (s:Skill) WITH totalNodes, persons, count(s) AS skills
-... -- truncated for brevity
-RETURN persons, skills, roles, companies, technologies, vulnerabilities, relationships
+MATCH (p:Person) RETURN count(p) AS total
 ```
+
+- Purpose: each label is counted by its own query and the controller assembles the response. Chaining one `MATCH` per label into a single pipeline looks tidier but breaks on a partially populated graph: a label with no nodes drops every row, the query returns no records, and the endpoint fails.
 
 Why graph traversal is powerful
 
@@ -190,8 +192,6 @@ Why graph traversal is powerful
 ---
 
 ## Screenshots
-
-> Replace these placeholders with production screenshots before publishing the repository.
 
 - Dashboard
 <img width="1919" height="880" alt="image" src="https://github.com/user-attachments/assets/9ba38c31-0e1a-4845-a955-d2a071d7da2c" />
@@ -249,7 +249,17 @@ cd backend
 npm start
 ```
 
-5. Run the frontend
+5. Seed the graph (first run only)
+
+```bash
+cd backend
+node seed-cognodb.js      # constraints, nodes and relationships
+node run-cognodb.js       # relationship queries from database/relationship-queries.md
+```
+
+Both scripts use `MERGE`, so re-running them is safe and will not duplicate data. A fully seeded graph holds 67 nodes and 137 relationships.
+
+6. Run the frontend
 
 ```bash
 cd frontend
@@ -277,8 +287,10 @@ CORS_ORIGIN=http://localhost:3000
 `frontend/.env.example`
 
 ```env
-VITE_API_URL=http://localhost:5000
+VITE_API_URL=https://skillgraph-ai-levw.onrender.com
 ```
+
+Set this to `http://localhost:5000` in `frontend/.env` to point the UI at a local backend. Vite bakes the value in at build time, so changing it on Vercel requires a redeploy, not just a restart.
 
 ---
 
@@ -292,7 +304,9 @@ skillgraph-ai/
 │   ├── controllers/          # API controllers (graph, person, recommendations, analytics, etc.)
 │   ├── routes/               # Express route wiring
 │   ├── services/             # neo4jService.js wrapper
-│   ├── database/             # cypher seed/schema file (schema.cypher)
+│   ├── database/             # schema.cypher, schema-cognodb.cypher, relationships.cypher
+│   ├── seed-cognodb.js       # loads schema-cognodb.cypher, one statement per request
+│   ├── run-cognodb.js        # runs the statements in database/relationship-queries.md
 │   ├── package.json
 │   └── server.js
 ├── frontend/
@@ -313,7 +327,6 @@ skillgraph-ai/
 
 Realistic next steps without breaking existing features:
 
-- Add a lightweight seed runner (npm script) that can safely load `database/schema.cypher` into a configured Neo4j instance using the driver.
 - Add an optional startup health-check that runs `driver.verifyConnectivity()` and fails with a helpful message when env vars are misconfigured (the code already attempts this on server start).
 - Add role-similarity algorithms (graph algorithms) for better recommendations.
 - Add unit and integration tests for controllers and React components.
@@ -331,14 +344,15 @@ Realistic next steps without breaking existing features:
 | Never hardcode URI/username/password | PASS | No secrets in code; `.env.example` contains commented examples only |
 | Use parameterized Cypher queries | PASS | Controllers use `runReadQuery(cypher, params)` (examples in `recommendationController.js`) |
 | Handle DB connection failures gracefully | PASS | server attempts `verifyConnectivity()` at startup and controllers catch errors and return 500 responses |
-| Provide seed/load script for graph DB | PASS | `backend/database/schema.cypher` contains schema and seed statements (run with cypher-shell or provider tooling) |
+| Provide seed/load script for graph DB | PASS | `backend/seed-cognodb.js` loads `database/schema-cognodb.cypher` through the driver; `run-cognodb.js` applies `database/relationship-queries.md` |
 | Application reads live data from DB (not local JSON) | PASS | Controllers use neo4jService to run Cypher and return live results |
 
 ---
 
 ## Demo
 
-- Hosted URL: _TBD_
+- Frontend: https://skillgraph-ai-sailu1.vercel.app (behind Vercel Deployment Protection)
+- Backend: https://skillgraph-ai-levw.onrender.com
 - Video walkthrough: _TBD_
 
 ---
@@ -352,12 +366,12 @@ High-level steps
 1. Create a GitHub (or GitLab) repository and push this project to the `main` branch.
 2. Deploy the backend to Render (recommended):
    - Import the repository into Render using the `render.yaml` manifest (Render supports a "Deploy from Repo" flow and will detect `render.yaml`).
-   - Add the following Render **Secrets** (do NOT paste them into source):
-     - `NEO4J_URI` = bolt+s://<instance>.databases.cognodb.cloud (CognoDB/AuraDB URI)
+   - Fill in the values Render leaves blank (`sync: false` in `render.yaml`) from the service's **Environment** tab:
+     - `NEO4J_URI` = bolt+s://<instance>.databases.cognodb.com (CognoDB/AuraDB URI)
      - `NEO4J_USERNAME` = <username>
      - `NEO4J_PASSWORD` = <password>
-     - `CORS_ORIGIN` = https://<your-vercel-app>.vercel.app
-     - `VITE_API_URL` (optional secret used by static Render frontend deployment; if using Vercel for frontend, set VITE_API_URL in Vercel instead)
+     - `CORS_ORIGIN` = https://skillgraph-ai-sailu1.vercel.app
+     - `VITE_API_URL` (only for the optional Render static frontend; with Vercel, set it there instead)
    - Confirm Render creates a web service named `skillgraph-ai-backend` and that it uses `backend` as the root. The `render.yaml` in the repo uses `npm install` and `npm start`.
    - After creation, open the Render service and set any additional secrets in the dashboard if necessary.
 
@@ -369,31 +383,31 @@ High-level steps
 
 CORS details
 
-- The backend reads `CORS_ORIGIN` at runtime and uses it for the `cors()` middleware. Set `CORS_ORIGIN` to your Vercel application origin (for example, `https://skillgraph-ai-username.vercel.app`) in Render secrets. This ensures only the frontend origin is allowed rather than using `*`.
+- The backend reads `CORS_ORIGIN` at runtime and uses it for the `cors()` middleware. Set `CORS_ORIGIN` to your Vercel application origin (for example, `https://skillgraph-ai-sailu1.vercel.app`) in Render secrets. This ensures only the frontend origin is allowed rather than using `*`.
 
 Post-deployment verification
 
 1. Wait for Render to finish building and starting the backend; open the Render service URL and verify the health endpoint responds:
-   - `GET https://<your-render-backend-url>/health` should return JSON { status: 'ok' }
+   - `GET https://skillgraph-ai-levw.onrender.com/health` should return JSON { status: 'ok' }
 2. Verify Neo4j connectivity in Render logs — the server attempts `driver.verifyConnectivity()` at startup and will log success or a helpful error message.
 3. After backend is running, deploy frontend to Vercel and confirm the site loads.
 4. Verify API endpoints from the frontend (or using curl/postman):
-   - `GET https://<your-render-backend-url>/api/graph`
-   - `GET https://<your-render-backend-url>/api/persons`
-   - `GET https://<your-render-backend-url>/api/skills`
-   - `GET https://<your-render-backend-url>/api/companies`
-   - `GET https://<your-render-backend-url>/api/roles`
-   - `GET https://<your-render-backend-url>/api/recommendations/<personName>`
-   - `GET https://<your-render-backend-url>/api/analytics/overview`
-   - `GET https://<your-render-backend-url>/api/career-advice/<personName>`
+   - `GET https://skillgraph-ai-levw.onrender.com/api/graph`
+   - `GET https://skillgraph-ai-levw.onrender.com/api/persons`
+   - `GET https://skillgraph-ai-levw.onrender.com/api/skills`
+   - `GET https://skillgraph-ai-levw.onrender.com/api/companies`
+   - `GET https://skillgraph-ai-levw.onrender.com/api/roles`
+   - `GET https://skillgraph-ai-levw.onrender.com/api/recommendations/<personName>`
+   - `GET https://skillgraph-ai-levw.onrender.com/api/analytics/overview`
+   - `GET https://skillgraph-ai-levw.onrender.com/api/career-advice/<personName>`
 
 Environment variables to set (summary)
 
-- Render (backend) — set as Render **Secrets**:
+- Render (backend) — set in the service's Environment tab (declared `sync: false` in `render.yaml`):
   - `NEO4J_URI` (e.g. bolt+s://<instance>.databases.cognodb.cloud)
   - `NEO4J_USERNAME`
   - `NEO4J_PASSWORD`
-  - `CORS_ORIGIN` (set to Vercel origin e.g., https://skillgraph-ai-username.vercel.app)
+  - `CORS_ORIGIN` (set to Vercel origin e.g., https://skillgraph-ai-sailu1.vercel.app)
   - (optional) `VITE_API_URL` if you use Render static frontend instead of Vercel
 
 - Vercel (frontend) — Environment Variables in Vercel project settings:
@@ -406,38 +420,22 @@ Security and secrets
 
 Automating deployment
 
-- Render: the included `render.yaml` config (now requiring `CORS_ORIGIN` as a secret) can be imported by Render to create services and environment variables automatically.
+- Render: the included `render.yaml` declares both services and leaves every credential as `sync: false`, so importing it as a Blueprint creates the services and then prompts for the values.
 - Vercel: `vercel.json` is present to set a static build configuration; link your repo in Vercel and add the `VITE_API_URL` environment variable in project settings.
 
 ---
 
-## Live URLs and manual steps (you must provide these values)
+## Live URLs
 
-- Frontend (Vercel) URL: https://<your-vercel-app>.vercel.app  — set this in Render `CORS_ORIGIN`.
-- Backend (Render) URL: https://<your-render-backend>.onrender.com — set this in Vercel `VITE_API_URL`.
+| | URL | Notes |
+|---|---|---|
+| Frontend (Vercel) | https://skillgraph-ai-sailu1.vercel.app | Deployment Protection is on, so visitors hit a Vercel login first |
+| Backend (Render) | https://skillgraph-ai-levw.onrender.com | Free instance, spins down when idle |
+| Database | CognoDB Cloud (`bolt+s://<instance>.databases.cognodb.com`) | Credentials live in Render environment variables |
 
-I cannot perform the external deployment from this environment. To complete the deployment please perform the following manual steps (concise):
+To repoint either side, set `VITE_API_URL` in Vercel to the backend URL and redeploy, and set `CORS_ORIGIN` in Render to the frontend origin.
 
-1. Push the repository to GitHub and ensure `main` branch is up-to-date.
-2. In Render:
-   - Import repo and choose to use `render.yaml` or create a new Web Service for `backend` and a Static Site for `frontend`.
-   - Add secrets: `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `CORS_ORIGIN`, and optionally `VITE_API_URL`.
-   - Deploy and check service logs for successful `verifyConnectivity()` output.
-3. In Vercel:
-   - Import repo and create a project for the `frontend` folder.
-   - Add Environment Variable `VITE_API_URL` set to your Render backend URL.
-   - Deploy and open the Vercel URL.
-4. Test end-to-end (open frontend and verify graph, analytics, recommendations, career assistant).
-
----
-
-## What I changed (deployment-related)
-
-- Updated `render.yaml` to read `CORS_ORIGIN` from a Render secret instead of using `*`. This is a minimal security/configuration change to ensure production deployments use an explicit origin and to prevent accidental open CORS.
-- No application logic or UI was modified.
-
----
-
+`CORS_ORIGIN` is currently unset on the Render service, so `server.js` falls back to `*` and the API accepts requests from any origin. Setting it to the Vercel origin narrows that to the one site that needs it.
 
 ---
 
@@ -449,5 +447,3 @@ Sailu Chittala
 - LinkedIn: https://www.linkedin.com/in/sailuchittala
 
 ---
-
-If you would like this README expanded with live screenshots, a seed-runner script, or an automated health-check script, I can add those in a follow-up commit. Thank you.
