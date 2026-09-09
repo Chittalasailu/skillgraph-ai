@@ -14,7 +14,7 @@ export default function PersonSelector({ selectedPerson, onChange }) {
         setLoading(true)
         const response = await api.get('/api/persons')
         if (!active) return
-        const fetched = (response.data || []).map((person) => person.name).filter(Boolean)
+        const fetched = (response.data?.data || []).map((person) => person.name).filter(Boolean)
         const sorted = [...new Set(fetched)].sort((a, b) => a.localeCompare(b))
         setPeople(sorted)
         setError(null)
