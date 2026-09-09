@@ -1,37 +1,35 @@
 services:
   - type: web
     name: skillgraph-ai-backend
-    env: node
+    runtime: node
     region: oregon
     branch: main
-    root: backend
+    rootDir: backend
     autoDeploy: true
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
     envVars:
-      - key: PORT
-        value: 5000
       - key: NODE_ENV
         value: production
-      # For security and correct CORS handling, configure CORS_ORIGIN as a Render secret
+      # Set these in the Render dashboard; sync: false keeps them out of the repo.
+      # CORS_ORIGIN should be the frontend origin, e.g. https://skillgraph-ai-sailu1.vercel.app
       - key: CORS_ORIGIN
-        fromSecret: CORS_ORIGIN
+        sync: false
       - key: NEO4J_URI
-        fromSecret: NEO4J_URI
+        sync: false
       - key: NEO4J_USERNAME
-        fromSecret: NEO4J_USERNAME
+        sync: false
       - key: NEO4J_PASSWORD
-        fromSecret: NEO4J_PASSWORD
+        sync: false
+
   - type: static
     name: skillgraph-ai-frontend
-    env: static
-    region: oregon
     branch: main
-    root: frontend
+    rootDir: frontend
     autoDeploy: true
     buildCommand: npm install && npm run build
-    publishPath: dist
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        fromSecret: VITE_API_URL
+        sync: false
