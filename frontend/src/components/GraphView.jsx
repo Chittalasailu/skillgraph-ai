@@ -113,9 +113,6 @@ export default function GraphView({ selectedPerson }) {
         setLoading(true)
         const response = await api.get('/api/graph')
 
-        console.log(response.data)
-        console.log(response.data.nodes.length)
-        console.log(response.data.edges.length)
 
         const { nodes: rawNodes, edges: rawEdges } = normalizeGraph(response.data)
 
